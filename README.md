@@ -16,14 +16,25 @@ append-only ledger. See `docs/plan.md` for the full design.
 - **pnpm 10+** (`corepack enable && corepack prepare pnpm@10.33.0 --activate`, or `brew install pnpm`)
 - Docker + Docker Compose (for PostgreSQL)
 
-Each package manages its own dependencies (no root workspace); run pnpm inside
-`backend/` and `frontend/` separately.
+Each package manages its own dependencies and `pnpm-lock.yaml` — this is **not**
+a pnpm workspace. The root `package.json` is a thin convenience runner (via
+`concurrently`); it installs nothing of its own beyond that and delegates to each
+package. Run pnpm inside `backend/` and `frontend/` for real work, or use the
+root shortcuts below.
+
+```bash
+pnpm install:all   # install both packages (backend + frontend)
+pnpm dev           # run backend (start:dev) + frontend (vite) together
+pnpm build         # build both packages
+pnpm lint          # biome lint both packages
+pnpm test          # vitest run both packages
+```
 
 ## Quick start (local)
 
 ```bash
 # 1. Start PostgreSQL
-docker compose up -d                 # postgres:16-alpine on :5432
+docker compose up -d                 # postgres:16-alpine, host port :5433
 
 # 2. Backend
 cd backend
@@ -50,7 +61,7 @@ Backend and frontend ship optimized multi-stage Dockerfiles and sit behind the
 
 ```bash
 docker compose --profile full up --build
-# postgres :5432 · backend :3000 · frontend (nginx) :8080
+# postgres :5433 · backend :3000 · frontend (nginx) :8080
 ```
 
 - `backend/Dockerfile` — `deps → build → runtime` stages (pnpm via corepack),
@@ -96,6 +107,7 @@ test per concern), and `docs/notes.md` for per-phase build notes.
 
 ```
 .
+├── package.json        root convenience runner (concurrently): dev/build/lint/test
 ├── backend/            NestJS + Fastify + Prisma (+ backend/biome.json)
 ├── frontend/           React + Vite (+ frontend/biome.json)
 ├── docker-compose.yml  postgres (default) + backend/frontend (profile: full)
@@ -104,4 +116,5 @@ test per concern), and `docs/notes.md` for per-phase build notes.
 ```
 
 Dependencies are managed with **pnpm**, per package (each has its own
-`pnpm-lock.yaml`); there is no root `package.json` or root workspace.
+`pnpm-lock.yaml`). The root `package.json` is only a convenience runner — there
+is no pnpm workspace; nothing is hoisted to the repo root.

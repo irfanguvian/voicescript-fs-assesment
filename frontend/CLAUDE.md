@@ -27,7 +27,7 @@ Lint/format is **Biome**, not ESLint/Prettier. Tests: Vitest + Testing Library +
 
 ## API proxy
 
-Dev calls `/api/*` are proxied to the backend (`vite.config.ts`). Target: `VITE_API_PROXY_TARGET` env, default `http://localhost:3000` (use `http://backend:3000` in docker-compose). Don't hardcode the backend host in code — go through `/api`.
+In **dev**, Vite proxies `/api/*` to the backend (`vite.config.ts`); target is `VITE_API_PROXY_TARGET` env, default `http://localhost:3000`. In **docker** the SPA is served by nginx, which proxies `/api/` to `http://backend:3000` (`nginx.conf`) — Vite is not running there. Either way, don't hardcode the backend host in code — go through `/api`.
 
 ## Conventions
 
