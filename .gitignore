@@ -1,0 +1,14 @@
+node_modules
+dist
+coverage
+*.log
+.env
+.DS_Store
+
+# OMC agent scratch state (sessions, cost logs, transcript paths, plans) — local only
+.omc/
+backend/.omc/
+frontend/.omc/
+
+# TS build cache
+*.tsbuildinfo

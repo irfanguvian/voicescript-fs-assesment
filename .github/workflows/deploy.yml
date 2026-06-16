@@ -1,0 +1,90 @@
+name: Deploy to Railway
+
+on:
+  push:
+    branches: [main]
+
+# Avoid overlapping deploys on rapid pushes.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Mandatory gate: build + lint + test must pass before anything deploys.
+  # ---------------------------------------------------------------------------
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: |
+            backend/pnpm-lock.yaml
+            frontend/pnpm-lock.yaml
+
+      - name: Install backend
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Install frontend
+        run: pnpm --dir frontend install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --dir backend exec prisma generate
+
+      - name: Build
+        run: pnpm --dir backend run build && pnpm --dir frontend run build
+      - name: Lint
+        run: pnpm --dir backend run lint && pnpm --dir frontend run lint
+      - name: Test
+        run: pnpm --dir backend run test && pnpm --dir frontend run test
+
+  # ---------------------------------------------------------------------------
+  # Apply pending Prisma migrations to the Railway Postgres (public URL).
+  # Runs from CI because the pruned runtime image has no prisma CLI.
+  # ---------------------------------------------------------------------------
+  migrate:
+    needs: gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+
+      - name: Install backend
+        run: pnpm --dir backend install --frozen-lockfile
+
+      - name: Apply migrations
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm exec prisma migrate deploy
+
+  # ---------------------------------------------------------------------------
+  # Push the single app service (root Dockerfile = backend API + SPA) to Railway.
+  # ---------------------------------------------------------------------------
+  deploy:
+    needs: migrate
+    runs-on: ubuntu-latest
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy app
+        run: railway up --service app --ci

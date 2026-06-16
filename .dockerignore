@@ -1,0 +1,12 @@
+# Keep the build context small for the root (Option B) image.
+**/node_modules
+**/dist
+**/coverage
+**/*.log
+**/.env
+**/.git
+.git
+.github
+.omc
+docs
+**/.DS_Store

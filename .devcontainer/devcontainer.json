@@ -1,0 +1,28 @@
+{
+  "name": "court-reporting-workflow",
+  "dockerComposeFile": [
+    "../docker-compose.yml",
+    "docker-compose.devcontainer.yml"
+  ],
+  "service": "workspace",
+  "workspaceFolder": "/workspace",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22"
+    }
+  },
+  "forwardPorts": [3000, 5173, 5432],
+  "portsAttributes": {
+    "3000": { "label": "backend-api" },
+    "5173": { "label": "frontend-dev" },
+    "5432": { "label": "postgres" }
+  },
+  "postCreateCommand": "corepack enable && corepack prepare pnpm@10.33.0 --activate && cd backend && pnpm install && cd ../frontend && pnpm install",
+  "customizations": {
+    "vscode": {
+      "extensions": ["biomejs.biome", "Prisma.prisma"]
+    }
+  },
+  "remoteUser": "node"
+}

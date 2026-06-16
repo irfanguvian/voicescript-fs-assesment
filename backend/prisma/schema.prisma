@@ -1,0 +1,127 @@
+// Prisma schema — Court Reporting Workflow Manager
+// Phase 2: full data model. IDs are ULIDs generated in the app layer (String @id).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum LocationType {
+  PHYSICAL
+  REMOTE
+}
+
+enum JobStatus {
+  NEW
+  ASSIGNED
+  TRANSCRIBED
+  REVIEWED
+  COMPLETED
+}
+
+enum WorkerStatus {
+  AVAILABLE
+  BUSY
+  OFFLINE
+}
+
+enum PayeeType {
+  REPORTER
+  EDITOR
+}
+
+model Job {
+  job_id           String       @id
+  case_name        String
+  duration_minutes Int
+  location_type    LocationType
+  city             String?
+  status           JobStatus    @default(NEW)
+  reporter_id      String?
+  editor_id        String?
+  reporter_amount  Int?
+  editor_amount    Int?
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
+  finished_at      DateTime?
+  deleted_at       DateTime?
+
+  reporter Reporter? @relation(fields: [reporter_id], references: [reporter_id])
+  editor   Editor?   @relation(fields: [editor_id], references: [editor_id])
+
+  @@index([status])
+  @@map("job")
+}
+
+model Reporter {
+  reporter_id String       @id
+  name        String
+  city        String
+  status      WorkerStatus @default(AVAILABLE)
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+  deleted_at  DateTime?
+
+  balance ReporterBalance?
+  jobs    Job[]
+
+  @@index([status, city])
+  @@map("reporter")
+}
+
+model Editor {
+  editor_id  String       @id
+  name       String
+  status     WorkerStatus @default(AVAILABLE)
+  created_at DateTime     @default(now())
+  updated_at DateTime     @updatedAt
+  deleted_at DateTime?
+
+  balance EditorBalance?
+  jobs    Job[]
+
+  @@index([status])
+  @@map("editor")
+}
+
+model ReporterBalance {
+  reporter_id     String   @id
+  current_balance Int      @default(0)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  reporter Reporter @relation(fields: [reporter_id], references: [reporter_id])
+
+  @@map("reporter_balance")
+}
+
+model EditorBalance {
+  editor_id       String   @id
+  current_balance Int      @default(0)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  editor Editor @relation(fields: [editor_id], references: [editor_id])
+
+  @@map("editor_balance")
+}
+
+// Append-only: rows are only ever inserted — never updated or deleted.
+// Note the deliberate absence of an `updated_at` column.
+model BalanceLedger {
+  ledger_id      String    @id
+  job_id         String
+  payee_type     PayeeType
+  payee_id       String
+  amount         Int
+  before_balance Int
+  description    String
+  created_at     DateTime  @default(now())
+
+  @@index([payee_type, payee_id])
+  @@map("balance_ledger")
+}

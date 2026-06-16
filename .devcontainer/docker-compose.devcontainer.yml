@@ -1,0 +1,13 @@
+# Devcontainer overlay: adds a long-lived workspace service that mounts the
+# repo and shares the network with the postgres service from the root compose.
+services:
+  workspace:
+    image: mcr.microsoft.com/devcontainers/typescript-node:22
+    volumes:
+      - ..:/workspace:cached
+    command: sleep infinity
+    environment:
+      DATABASE_URL: "postgresql://courtuser:courtpass@postgres:5432/courtdb?schema=public"
+    depends_on:
+      postgres:
+        condition: service_healthy

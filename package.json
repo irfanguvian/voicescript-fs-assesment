@@ -1,0 +1,19 @@
+{
+  "name": "court-reporting-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Root workspace to run backend + frontend together for testing",
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "install:all": "pnpm --dir backend install && pnpm --dir frontend install",
+    "dev": "concurrently -n backend,frontend -c blue,magenta \"pnpm --dir backend run start:dev\" \"pnpm --dir frontend run dev\"",
+    "build": "pnpm --dir backend run build && pnpm --dir frontend run build",
+    "test": "concurrently -n backend,frontend -c blue,magenta \"pnpm --dir backend run test\" \"pnpm --dir frontend run test\"",
+    "lint": "pnpm --dir backend run lint && pnpm --dir frontend run lint",
+    "backend": "pnpm --dir backend run start:dev",
+    "frontend": "pnpm --dir frontend run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
